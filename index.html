@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="오늘의 명언과 일본어 번역을 함께 만나 보세요. 今日の名言と日本語訳をお届けします。"
+    />
+    <meta name="theme-color" content="#f5f3ee" />
+    <title>오늘의 명언</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./script.js" defer></script>
+  </head>
+  <body>
+    <main class="page">
+      <header class="topbar">
+        <a class="wordmark" href="./" aria-label="오늘의 명언 · 今日の名言">
+          <span class="wordmark-mark" aria-hidden="true">“</span>
+          오늘의 명언
+        </a>
+        <span class="topbar-note">今日、心にとめておきたい一言</span>
+      </header>
+
+      <section class="quote-section" aria-labelledby="page-title">
+        <div class="date-line">
+          <span class="date-dot" aria-hidden="true"></span>
+          <time id="today-date"></time>
+          <span class="date-separator" aria-hidden="true">·</span>
+          <time id="today-date-ja" lang="ja"></time>
+        </div>
+        <p class="eyebrow">
+          <span>오늘 마음에 담아둘 한 문장</span>
+          <span lang="ja">今日、心にとめておきたい一言</span>
+        </p>
+        <h1 id="page-title" class="visually-hidden">오늘의 명언 · 今日の名言</h1>
+
+        <article class="quote-card" aria-live="polite">
+          <span class="quote-mark" aria-hidden="true">“</span>
+          <blockquote id="quote-text"></blockquote>
+          <p class="quote-translation" id="quote-text-ja" lang="ja"></p>
+          <div class="quote-footer">
+            <span class="author-rule" aria-hidden="true"></span>
+            <cite id="quote-author"></cite>
+            <span class="author-separator" aria-hidden="true">·</span>
+            <cite id="quote-author-ja" lang="ja"></cite>
+          </div>
+        </article>
+
+        <div class="card-actions">
+          <button class="copy-button" id="copy-button" type="button">
+            <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="7" y="6" width="9" height="11" rx="1.5"></rect>
+              <path d="M13 6V4.5A1.5 1.5 0 0 0 11.5 3h-7A1.5 1.5 0 0 0 3 4.5v9A1.5 1.5 0 0 0 4.5 15H7"></path>
+            </svg>
+            <span>문장 복사 · 文をコピー</span>
+          </button>
+          <span class="daily-note">매일 새로운 문장 · 毎日、新しい言葉</span>
+        </div>
+        <p class="copy-status" id="copy-status" role="status" aria-live="polite"></p>
+        <textarea
+          class="copy-fallback"
+          id="copy-fallback"
+          aria-label="복사할 명언 · コピーする名言"
+          readonly
+          hidden
+        ></textarea>
+      </section>
+
+      <footer class="page-footer">
+        <span>천천히 읽고, 오래 간직하세요. · ゆっくり読んで、大切に。</span>
+        <span class="footer-sparkle" aria-hidden="true">✳</span>
+      </footer>
+    </main>
+  </body>
+</html>
