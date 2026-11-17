@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마음 혈압계 - 목소리로 측정하는 오늘의 감정 수치</title>
+    <!-- 폰트 서버 연결을 미리 열어 둠 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Google Fonts: 실제 쓰는 폰트·굵기만 로드 (Noto Sans KR / Orbitron), display=swap으로 글자 먼저 표시 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS 로드 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+            min-height: 100vh;
+        }
+        .digital-font {
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 2px;
+        }
+        .lcd-screen {
+            background: linear-gradient(180deg, #b8c9b8 0%, #a5b8a5 100%);
+            box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.8);
+            border: 3px solid #627d98;
+        }
+        .device-body {
+            background: linear-gradient(145deg, #ffffff, #f0f4f8);
+            box-shadow: 20px 20px 60px #bec8d2, -20px -20px 60px #ffffff;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.7; }
+            50% { transform: scale(1.15); opacity: 0.2; }
+            100% { transform: scale(0.95); opacity: 0.7; }
+        }
+        .recording-ring {
+            animation: pulse-ring 1.5s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center p-4 sm:p-6 text-slate-800">
+
+    <!-- 아이콘 스프라이트 (Lucide 아이콘 6종을 인라인으로 포함: 외부 라이브러리 로드 제거) -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+        <symbol id="i-heart-pulse" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/></symbol>
+        <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></symbol>
+        <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></symbol>
+        <symbol id="i-volume-2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></symbol>
+        <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+        <symbol id="i-clipboard-list" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></symbol>
+    </svg>
+
+    <!-- 메인 혈압계 디바이스 컨테이너 -->
+    <main class="w-full max-w-md device-body rounded-[2.5rem] p-6 sm:p-8 border border-white/80 relative overflow-hidden">
+
+        <!-- 상단 헤더 -->
+        <header class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-2xl bg-rose-500 text-white flex items-center justify-center shadow-md shadow-rose-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-heart-pulse"/></svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black tracking-tight text-slate-800">마음 혈압계</h1>
+                    <p class="text-xs text-slate-500 font-medium">VOICE MOOD MONITOR</p>
+                </div>
+            </div>
+            <button id="historyBtn" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors" title="측정 기록 보기">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-history"/></svg>
+            </button>
+        </header>
+
+        <!-- 디지털 LCD 모니터 화면 -->
+        <section class="lcd-screen rounded-2xl p-5 mb-6 text-slate-900 relative">
+            <!-- 상단 상태 표시줄 -->
+            <div class="flex justify-between items-center text-xs font-bold opacity-75 mb-3 border-b border-slate-700/20 pb-2">
+                <span id="statusText" class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-slate-800 inline-block"></span>
+                    대기 중 (READY)
+                </span>
+                <span id="currentDate">2026.11.17</span>
+            </div>
+
+            <!-- 수치 표시 영역 -->
+            <div class="grid grid-cols-12 gap-2 items-center my-2">
+                <!-- 왼쪽: 기분 수축기/이완기 수치 -->
+                <div class="col-span-8 space-y-2">
+                    <!-- 수축기 (활력/텐션) -->
+                    <div class="flex items-baseline justify-between">
+                        <div>
+                            <span class="text-xs font-extrabold block">SYS <span class="font-normal opacity-80">활력지수</span></span>
+                            <span class="text-[10px] opacity-70">ENERGY</span>
+                        </div>
+                        <div class="digital-font text-4xl sm:text-5xl font-extrabold tracking-wider" id="sysValue">---</div>
+                    </div>
+
+                    <!-- 이완기 (안정/평온) -->
+                    <div class="flex items-baseline justify-between border-t border-slate-800/15 pt-2">
+                        <div>
+                            <span class="text-xs font-extrabold block">DIA <span class="font-normal opacity-80">안정지수</span></span>
+                            <span class="text-[10px] opacity-70">CALMNESS</span>
+                        </div>
+                        <div class="digital-font text-4xl sm:text-5xl font-extrabold tracking-wider" id="diaValue">---</div>
+                    </div>
+                </div>
+
+                <!-- 오른쪽: 맥박(설렘/두근거림) & 실시간 파형 -->
+                <div class="col-span-4 border-l border-slate-800/20 pl-3 flex flex-col justify-between h-full">
+                    <div class="text-right">
+                        <span class="text-[10px] font-bold block">PULSE</span>
+                        <span class="text-[10px] opacity-75">설렘/강약</span>
+                        <div class="digital-font text-2xl font-bold mt-1" id="pulseValue">--</div>
+                    </div>
+
+                    <!-- 실시간 오디오 비주얼라이저 캔버스 -->
+                    <div class="mt-3 bg-slate-900/10 rounded-lg p-1.5 h-12 flex items-center justify-center">
+                        <canvas id="visualizer" class="w-full h-full"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 하단 WHO 스타일 기분 게이지 바 -->
+            <div class="mt-4 pt-2 border-t border-slate-800/20">
+                <div class="flex justify-between text-[10px] font-bold mb-1 opacity-80">
+                    <span>저기압</span>
+                    <span>평온</span>
+                    <span>활기참</span>
+                    <span>과열</span>
+                </div>
+                <div class="w-full h-2.5 bg-slate-800/20 rounded-full overflow-hidden flex">
+                    <div class="w-1/4 h-full bg-blue-600/70"></div>
+                    <div class="w-1/4 h-full bg-emerald-600/70"></div>
+                    <div class="w-1/4 h-full bg-amber-500/80"></div>
+                    <div class="w-1/4 h-full bg-rose-600/80"></div>
+                </div>
+                <!-- 현재 위치 인디케이터 -->
+                <div class="relative w-full h-2 mt-0.5">
+                    <div id="gaugeIndicator" class="w-3 h-3 bg-slate-900 rotate-45 absolute -top-1 transition-all duration-700 opacity-0" style="left: 50%;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 진단 결과 카드 (측정 완료 시 표시) -->
+        <section id="resultCard" class="hidden mb-6 bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm transition-all">
+            <div class="flex items-center justify-between mb-2">
+                <span id="moodBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">
+                    정상 기분 (최적 상태)
+                </span>
+                <button id="ttsBtn" class="flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2.5 py-1 rounded-lg transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-volume-2"/></svg>
+                    <span>음성 안내</span>
+                </button>
+            </div>
+            <p id="moodSummary" class="text-sm font-bold text-slate-800 mb-1">
+                오늘 마음 혈압은 120에 80, 아주 건강한 상태입니다!
+            </p>
+            <p id="moodAdvice" class="text-xs text-slate-600 leading-relaxed">
+                목소리에서 편안하고 긍정적인 에너지가 느껴집니다. 이 좋은 리듬을 유지하며 오늘 하루를 즐겨보세요.
+            </p>
+        </section>
+
+        <!-- 안내 메시지 / 에러 알림 박스 (alert 대체) -->
+        <div id="messageBox" class="hidden mb-4 p-3 rounded-xl text-xs font-medium text-center transition-all"></div>
+
+        <!-- 측정 컨트롤 영역 -->
+        <section class="flex flex-col items-center">
+            <p id="instructionText" class="text-xs text-slate-500 text-center mb-4 font-medium">
+                버튼을 누르고 <strong>"오늘 하루 어때?"</strong>에 대해 4초간 편하게 말해보세요.
+            </p>
+
+            <div class="relative flex items-center justify-center">
+                <!-- 녹음 중 파동 효과 -->
+                <div id="pulseRing" class="hidden absolute w-24 h-24 rounded-full bg-rose-400 recording-ring"></div>
+
+                <!-- 메인 측정 시작 버튼 -->
+                <button id="measureBtn" class="relative z-10 w-20 h-20 rounded-full bg-gradient-to-tr from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white shadow-xl shadow-rose-300/60 flex flex-col items-center justify-center transition-transform active:scale-95 focus:outline-none">
+                    <svg id="micIcon" class="w-8 h-8 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-mic"/></svg>
+                    <span id="btnLabel" class="text-[11px] font-bold tracking-wider">측정 시작</span>
+                </button>
+            </div>
+
+            <!-- 타이머 진행 바 (width 대신 transform으로 갱신: 레이아웃 재계산 방지) -->
+            <div id="progressContainer" class="w-full max-w-[200px] h-1.5 bg-slate-200 rounded-full mt-5 overflow-hidden opacity-0 transition-opacity">
+                <div id="progressBar" class="h-full w-full bg-rose-500 origin-left" style="transform: scaleX(0);"></div>
+            </div>
+        </section>
+
+        <!-- 측정 기록 모달 (슬라이드 업 패널) -->
+        <div id="historyModal" class="hidden absolute inset-0 bg-white/95 z-30 p-6 flex flex-col">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-200">
+                <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-clipboard-list"/></svg>
+                    최근 마음 혈압 기록
+                </h2>
+                <button id="closeHistoryBtn" class="p-2 rounded-full hover:bg-slate-100 text-slate-500">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-x"/></svg>
+                </button>
+            </div>
+            <div id="historyList" class="flex-1 overflow-y-auto py-4 space-y-3">
+                <!-- 기록 아이템이 동적으로 삽입됨 -->
+            </div>
+            <button id="clearHistoryBtn" class="w-full py-2.5 text-xs font-semibold text-slate-500 hover:text-rose-600 border border-slate-200 rounded-xl transition-colors">
+                기록 전체 삭제
+            </button>
+        </div>
+
+    </main>
+
+    <script>
+        // ===== 설정값 =====
+        const FFT_SIZE = 256;            // 주파수 분석 크기 (bin 128개)
+        const MEASURE_MS = 4000;         // 측정 시간
+        const TICK_MS = 80;              // 측정 중 숫자 갱신 간격 (프레임마다 DOM을 쓰지 않도록 제한)
+        const GEMINI_TIMEOUT_MS = 9000;  // AI 분석 대기 상한 (넘으면 로컬 진단으로 즉시 전환)
+        const HISTORY_KEY = 'moodBpHistory';
+        const GEMINI_API_KEY = "";       // 런타임 환경 자동 주입
+
+        // 말소리 감지 기준 (필요하면 이 값만 조정)
+        const LEVEL_FFT_SIZE = 2048;     // 입력 크기 측정용 분석 창 (약 43ms)
+        const VOICE_DB = -45;            // 이 크기(dBFS) 이상이면 말소리 후보
+        const MIN_VOICED_MS = 500;       // 말소리 후보가 누적 0.5초 이상이어야 음성으로 인정
+        const MIN_VOICED_STD_DB = 1.5;   // 선풍기 같은 일정한 소음 제외 (말소리 구간의 크기 변화)
+        const NO_VOICE_HINT_MS = 1500;   // 이 시간까지 소리가 없으면 안내 문구 표시
+
+        // ===== DOM 요소 참조 =====
+        const $ = (id) => document.getElementById(id);
+        const measureBtn = $('measureBtn');
+        const btnLabel = $('btnLabel');
+        const pulseRing = $('pulseRing');
+        const statusText = $('statusText');
+        const sysValue = $('sysValue');
+        const diaValue = $('diaValue');
+        const pulseValue = $('pulseValue');
+        const gaugeIndicator = $('gaugeIndicator');
+        const resultCard = $('resultCard');
+        const moodBadge = $('moodBadge');
+        const moodSummary = $('moodSummary');
+        const moodAdvice = $('moodAdvice');
+        const instructionText = $('instructionText');
+        const IDLE_INSTRUCTION_HTML = instructionText.innerHTML; // 대기 상태 안내문 보관
+        const progressContainer = $('progressContainer');
+        const progressBar = $('progressBar');
+        const messageBox = $('messageBox');
+        const ttsBtn = $('ttsBtn');
+        const ttsLabel = ttsBtn.querySelector('span');
+        const canvas = $('visualizer');
+        const ctx = canvas.getContext('2d');
+
+        // 기록 모달 요소
+        const historyBtn = $('historyBtn');
+        const historyModal = $('historyModal');
+        const closeHistoryBtn = $('closeHistoryBtn');
+        const historyList = $('historyList');
+        const clearHistoryBtn = $('clearHistoryBtn');
+
+        // ===== 상태 변수 =====
+        let busy = false;          // 측정 시작부터 결과 표시까지 true (중복 실행 방지)
+        let isMeasuring = false;   // 녹음/분석 루프 동작 중
+        let animationId = 0;
+        let audioContext = null;
+        let analyser = null;
+        let levelAnalyser = null;
+        let lastSpokenText = '';
+        let canvasW = 1;
+        let canvasH = 1;
+
+        // ===== 유틸 =====
+        const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+        const pad = (n, len) => String(n).padStart(len, '0');
+        const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => (
+            { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+        ));
+
+        // 날짜 표시 설정
+        const now = new Date();
+        $('currentDate').textContent =
+            `${now.getFullYear()}.${pad(now.getMonth() + 1, 2)}.${pad(now.getDate(), 2)}`;
+
+        // ===== 캔버스 크기 (ResizeObserver + 고해상도 화면 대응) =====
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvasW = Math.max(1, Math.round(rect.width));
+            canvasH = Math.max(1, Math.round(rect.height));
+            canvas.width = Math.round(canvasW * dpr);
+            canvas.height = Math.round(canvasH * dpr);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.fillStyle = '#1e293b';   // 크기를 바꾸면 컨텍스트가 초기화되므로 여기서 한 번만 지정
+        }
+        if ('ResizeObserver' in window) {
+            new ResizeObserver(resizeCanvas).observe(canvas.parentElement);
+        } else {
+            window.addEventListener('resize', resizeCanvas);
+        }
+        resizeCanvas();
+
+        // ===== 메시지 박스 (alert 대신 사용) =====
+        function showMessage(text, type = 'info') {
+            messageBox.textContent = text;
+            messageBox.classList.remove('hidden', 'bg-rose-100', 'text-rose-700', 'bg-amber-100', 'text-amber-700', 'bg-slate-100', 'text-slate-700');
+            if (type === 'error') {
+                messageBox.classList.add('bg-rose-100', 'text-rose-700');
+            } else if (type === 'warning') {
+                messageBox.classList.add('bg-amber-100', 'text-amber-700');
+            } else {
+                messageBox.classList.add('bg-slate-100', 'text-slate-700');
+            }
+        }
+
+        function hideMessage() {
+            messageBox.classList.add('hidden');
+        }
+
+        // ===== 음성 안내: Gemini 사람 목소리(우선) → 브라우저 내장 음성(대체) =====
+        const TTS_MODELS = ['gemini-3.1-flash-tts-preview', 'gemini-2.5-flash-preview-tts'];
+        const TTS_VOICE = 'Sulafat';   // 따뜻한 여성 목소리. 취향에 따라 Aoede, Achernar, Leda 등으로 교체 가능
+        const ttsIdleLabel = ttsLabel.textContent;
+        let ttsCtx = null, ttsSource = null, ttsReq = 0, ttsFails = 0, ttsCache = { text: '', buffer: null };
+        if ('speechSynthesis' in window) window.speechSynthesis.getVoices();   // 음성 목록 미리 로드
+
+        function unlockPlayback() {   // 클릭 순간에 오디오를 깨워 둬야 결과 화면에서 자동 재생이 막히지 않음
+            try {
+                if (!ttsCtx) ttsCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (ttsCtx.state === 'suspended') ttsCtx.resume().catch(() => {});
+            } catch (e) { ttsCtx = null; }
+        }
+
+        function stopSpeaking() {
+            ttsReq++;
+            if (ttsSource) { try { ttsSource.onended = null; ttsSource.stop(); } catch (e) { /* 무시 */ } ttsSource = null; }
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            ttsLabel.textContent = ttsIdleLabel;
+        }
+
+        async function fetchGeminiSpeech(text) {
+            const body = JSON.stringify({
+                contents: [{ parts: [{ text: `부드럽고 따뜻한 목소리로 또박또박 읽어 주세요: ${text}` }] }],
+                generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: TTS_VOICE } } } }
+            });
+            let lastError;
+            for (const model of TTS_MODELS) {
+                try {
+                    const res = await fetchWithRetry(
+                        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
+                        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body },
+                        { retries: 0, timeoutMs: 12000 });
+                    const data = await res.json();
+                    const part = data.candidates?.[0]?.content?.parts?.find((p) => p.inlineData?.data);
+                    if (part) return part.inlineData;
+                } catch (e) { lastError = e; }
+            }
+            throw lastError || new Error('no audio');
+        }
+
+        async function toAudioBuffer(inline) {
+            const bin = atob(inline.data);
+            if (/L16|pcm/i.test(inline.mimeType || '')) {   // 16bit PCM (기본 24kHz, 모노)
+                const rate = parseInt((/rate=(\d+)/.exec(inline.mimeType) || [])[1], 10) || 24000;
+                const n = bin.length >> 1;
+                const buf = ttsCtx.createBuffer(1, n, rate);
+                const ch = buf.getChannelData(0);
+                for (let i = 0; i < n; i++) {
+                    const v = bin.charCodeAt(2 * i) | (bin.charCodeAt(2 * i + 1) << 8);
+                    ch[i] = (v & 0x8000 ? v - 0x10000 : v) / 32768;
+                }
+                return buf;
+            }
+            return ttsCtx.decodeAudioData(Uint8Array.from(bin, (c) => c.charCodeAt(0)).buffer);
+        }
+
+        async function playBuffer(buffer, reqId) {
+            if (reqId !== ttsReq) return;
+            if (ttsCtx.state === 'suspended') await ttsCtx.resume().catch(() => {});
+            await new Promise((resolve) => {
+                const src = ttsCtx.createBufferSource();
+                src.buffer = buffer;
+                src.connect(ttsCtx.destination);
+                src.onended = () => { if (ttsSource === src) ttsSource = null; resolve(); };
+                ttsSource = src;
+                src.start();
+            });
+        }
+
+        function pickKoreanVoice() {
+            const ko = window.speechSynthesis.getVoices().filter((v) => /^ko([-_]|$)/i.test(v.lang));
+            const score = (v) => (/natural|neural|online|premium|enhanced|고품질/i.test(v.name) ? 6 : 0)
+                + (/sunhi|sun-hi|선희|yuna|유나|heami|해미|google|female|여성/i.test(v.name) ? 4 : 0)
+                - (/injoon|인준|minsu|민수|bongjin|\bmale\b|남성/i.test(v.name) ? 8 : 0)
+                + (v.localService ? 0 : 1);
+            return ko.sort((a, b) => score(b) - score(a))[0] || null;
+        }
+
+        function speakWithBrowserVoice(text) {
+            if (!('speechSynthesis' in window)) return;
+            const u = new SpeechSynthesisUtterance(text);
+            const v = pickKoreanVoice();
+            u.lang = v ? v.lang : 'ko-KR';
+            if (v) u.voice = v;
+            u.rate = 0.95;
+            window.speechSynthesis.speak(u);
+        }
+
+        async function speakResult(text) {
+            stopSpeaking();
+            const reqId = ttsReq;
+            if (!text) return;
+            if (ttsCtx && ttsCache.text === text && ttsCache.buffer) return playBuffer(ttsCache.buffer, reqId);
+            if (ttsCtx && ttsFails < 2) {   // 연속 2회 실패하면 이번 접속에서는 브라우저 음성만 사용
+                ttsLabel.textContent = '음성 준비 중…';
+                try {
+                    const buffer = await toAudioBuffer(await fetchGeminiSpeech(text));
+                    ttsFails = 0;
+                    if (reqId !== ttsReq) return;
+                    ttsCache = { text, buffer };
+                    ttsLabel.textContent = ttsIdleLabel;
+                    return playBuffer(buffer, reqId);
+                } catch (e) {
+                    ttsFails++;
+                    console.warn('Gemini 음성 실패, 브라우저 음성으로 대체:', e);
+                    if (reqId !== ttsReq) return;
+                    ttsLabel.textContent = ttsIdleLabel;
+                }
+            }
+            speakWithBrowserVoice(text);
+        }
+
+        ttsBtn.addEventListener('click', () => {
+            unlockPlayback();
+            if (lastSpokenText) speakResult(lastSpokenText);
+        });
+
+        // 측정 시작 버튼
+        measureBtn.addEventListener('click', () => {
+            if (busy) return;
+            unlockPlayback();
+            stopSpeaking();
+            startMeasurement();
+        });
+
+        // ===== 오디오 장치 정리 =====
+        function releaseAudio(stream) {
+            if (stream) stream.getTracks().forEach((track) => track.stop());
+            if (audioContext) {
+                audioContext.close().catch(() => {});
+                audioContext = null;
+            }
+            analyser = null;
+            levelAnalyser = null;
+        }
+
+        // 녹음기 생성: 브라우저가 지원하는 형식을 고르고, 전송 용량을 줄이기 위해 비트레이트를 낮춤
+        function createRecorder(stream) {
+            const mimeType = window.MediaRecorder
+                ? ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find((t) => MediaRecorder.isTypeSupported(t))
+                : undefined;
+            const options = { audioBitsPerSecond: 32000 };
+            if (mimeType) options.mimeType = mimeType;
+
+            const recorder = new MediaRecorder(stream, options);
+            const chunks = [];
+            recorder.ondataavailable = (e) => {
+                if (e.data.size > 0) chunks.push(e.data);
+            };
+            const recorded = new Promise((resolve) => {
+                recorder.onstop = () => resolve(new Blob(chunks, { type: recorder.mimeType || mimeType || 'audio/webm' }));
+            });
+            return { recorder, recorded };
+        }
+
+        // ===== 마이크 오류 안내 (원인별로 다른 문구) =====
+        function micErrorMessage(err) {
+            const name = (err && err.name) || '';
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || window.isSecureContext === false) {
+                return '이 화면에서는 마이크를 사용할 수 없습니다. https 주소(또는 localhost)에서 열어 주세요.';
+            }
+            let text;
+            if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+                let inFrame = false;
+                try { inFrame = window.self !== window.top; } catch (e) { inFrame = true; }
+                text = inFrame
+                    ? '마이크 권한이 필요합니다. 미리보기(내장) 창에서는 마이크가 차단될 수 있으니 새 탭에서 열고, 브라우저 설정에서 마이크를 허용해 주세요.'
+                    : '마이크 권한이 필요합니다. 브라우저 설정에서 마이크를 허용해 주세요.';
+            } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError' || name === 'OverconstrainedError') {
+                text = '사용할 수 있는 마이크를 찾지 못했습니다. 마이크 연결과 기본 입력 장치를 확인해 주세요.';
+            } else if (name === 'NotReadableError' || name === 'TrackStartError' || name === 'AbortError') {
+                text = '마이크를 사용할 수 없습니다. 다른 앱이나 탭에서 마이크를 쓰고 있지 않은지 확인해 주세요.';
+            } else {
+                text = '마이크를 시작하지 못했습니다. 잠시 뒤 다시 시도해 주세요.';
+            }
+            return name ? `${text} (${name})` : text;
+        }
+
+        // ===== 말소리 감지 =====
+        // 마이크 입력의 크기(RMS, dBFS)로 '말소리 구간'을 판단한다.
+        function frameLevelDb(buf) {
+            let sq = 0;
+            for (let i = 0; i < buf.length; i++) sq += buf[i] * buf[i];
+            return 20 * Math.log10(Math.sqrt(sq / buf.length) + 1e-9);
+        }
+
+        // 말소리로 볼 수 있는 구간이 충분히 길고, 크기가 사람 말처럼 변하는지 확인
+        function judgeSpeech(s) {
+            if (s.voicedMs < MIN_VOICED_MS || s.frames < 5) return false;
+            const mean = s.dbSum / s.frames;
+            const variance = Math.max(0, s.dbSqSum / s.frames - mean * mean);
+            return Math.sqrt(variance) >= MIN_VOICED_STD_DB;
+        }
+
+        // ===== 측정 시작 =====
+        async function startMeasurement() {
+            busy = true;
+            hideMessage();
+            resultCard.classList.add('hidden');
+            gaugeIndicator.classList.add('opacity-0');
+
+            // 클릭 직후(동기 구간)에 만들어야 브라우저가 오디오를 정지 상태로 두지 않음
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (err) {
+                audioContext = null;
+            }
+
+            let stream;
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ audio: { autoGainControl: false } });   // 자동 음량 보정이 소리 크기 차이를 지우지 않도록 끔
+            } catch (err) {
+                console.error('마이크 접근 오류:', err);
+                releaseAudio(null);
+                busy = false;
+                showMessage(micErrorMessage(err), 'error');
+                return;
+            }
+
+            let recorder, recorded;
+            try {
+                if (!audioContext) throw new Error('AudioContext unavailable');
+                if (audioContext.state !== 'running') {
+                    await Promise.race([audioContext.resume(), new Promise((r) => setTimeout(r, 500))]);
+                }
+                if (audioContext.state !== 'running') throw new Error('AudioContext is not running');
+
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = FFT_SIZE;
+                levelAnalyser = audioContext.createAnalyser();
+                levelAnalyser.fftSize = LEVEL_FFT_SIZE;
+                const source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+                source.connect(levelAnalyser);
+
+                ({ recorder, recorded } = createRecorder(stream));
+                recorder.start();
+            } catch (err) {
+                console.error('녹음 설정 오류:', err);
+                releaseAudio(stream);
+                busy = false;
+                showMessage('이 브라우저에서는 음성 측정을 시작할 수 없습니다.', 'error');
+                return;
+            }
+
+            // UI 상태 변경 (측정 중): 말소리가 감지되기 전에는 수치를 표시하지 않음
+            pulseRing.classList.remove('hidden');
+            btnLabel.textContent = '측정 중...';
+            statusText.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-600 animate-ping inline-block"></span> 가압 및 음성 분석 중...`;
+            instructionText.innerHTML = `마이크에 대고 편하게 말씀해 주세요! <strong>(4초간 측정)</strong>`;
+            progressContainer.classList.remove('opacity-0');
+            progressBar.style.transform = 'scaleX(0)';
+            sysValue.textContent = '---';
+            diaValue.textContent = '---';
+            pulseValue.textContent = '--';
+
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            const levelBuf = new Float32Array(levelAnalyser.fftSize);
+            const sr = audioContext.sampleRate;
+            const voicedDb = [];           // 말소리 구간 크기(dBFS) → 수치
+            const pitchSt = [];            // 말소리 구간 음높이(반음) → 톤(억양 폭)
+            const envT = [], envDb = [];   // 크기 곡선 → 톤(말 빠르기)
+            const stats = { voicedMs: 0, frames: 0, dbSum: 0, dbSqSum: 0 };
+            const startTime = performance.now();
+            let prevT = startTime, lastTick = 0, lastPitchT = 0;
+            let hintShown = false;
+            let wasLive = false;   // 말소리로 인정되면 true (한 번 true가 되면 유지)
+            isMeasuring = true;
+
+            // 실시간 측정 루프
+            const loop = () => {
+                if (!isMeasuring) return;
+
+                const t = performance.now();
+                const elapsed = t - startTime;
+                const dt = Math.min(t - prevT, 100);
+                prevT = t;
+                const ratio = Math.min(elapsed / MEASURE_MS, 1);
+                progressBar.style.transform = `scaleX(${ratio})`;
+
+                levelAnalyser.getFloatTimeDomainData(levelBuf);
+                const db = frameLevelDb(levelBuf);
+                envT.push(t); envDb.push(db);
+                if (db >= VOICE_DB) {   // 말소리 구간만 분석에 사용
+                    stats.voicedMs += dt;
+                    stats.frames++;
+                    stats.dbSum += db;
+                    stats.dbSqSum += db * db;
+                    voicedDb.push(db);
+                    if (t - lastPitchT >= 20) {
+                        lastPitchT = t;
+                        const f0 = estimatePitch(levelBuf, sr);
+                        if (f0) pitchSt.push(12 * Math.log2(f0 / 55));
+                    }
+                }
+                analyser.getByteFrequencyData(dataArray);   // 파형 표시 전용
+
+                if (!wasLive && judgeSpeech(stats)) wasLive = true; // 최종 판정과 같은 기준을 만족해야 숫자 표시 시작
+                const live = wasLive;
+                if (live && hintShown) {
+                    hideMessage();
+                    hintShown = false;
+                } else if (!live && !hintShown && elapsed >= NO_VOICE_HINT_MS) {
+                    showMessage('소리가 잘 들리지 않아요. 마이크에 가까이 대고 말해 보세요.', 'warning');
+                    hintShown = true;
+                }
+
+                if (live && t - lastTick >= TICK_MS) {   // 지금까지의 실제 소리 크기로 수치 표시 (시간에 따라 저절로 오르지 않음)
+                    lastTick = t;
+                    const m = computeVolumeMetrics(voicedDb);
+                    sysValue.textContent = pad(m.sys, 3);
+                    diaValue.textContent = pad(m.dia, 2);
+                }
+
+                drawWaveform(dataArray);
+
+                if (elapsed < MEASURE_MS) {
+                    animationId = requestAnimationFrame(loop);
+                } else {
+                    finishMeasurement({ stream, recorder, recorded, voicedDb, pitchSt, envT, envDb, stats });
+                }
+            };
+            animationId = requestAnimationFrame(loop);
+        }
+
+        // ===== 실시간 캔버스 파형 렌더링 (화면에 보이는 막대만 그림) =====
+        function drawWaveform(dataArray) {
+            ctx.clearRect(0, 0, canvasW, canvasH);
+            const binCount = dataArray.length;
+            const barWidth = (canvasW / binCount) * 2.5;
+            const step = barWidth + 1;
+            const visible = Math.min(binCount, Math.ceil(canvasW / step));
+
+            for (let i = 0, x = 0; i < visible; i++, x += step) {
+                const barHeight = (dataArray[i] / 255) * canvasH;
+                ctx.fillRect(x, canvasH - barHeight, barWidth, barHeight);
+            }
+        }
+
+        // ===== 톤·크기 분석 =====
+        // 단계(저기압/평온/활기참/과열) = 톤만 반영: 억양 폭 6 : 말 빠르기 4 (소리 크기 반영 0)
+        // 수치(SYS/DIA/PULSE)          = 소리 크기만 반영 (톤 반영 0)
+        const TONE_W = { range: 6, tempo: 4 };
+        const TONE_CUTS = [0.25, 0.5, 0.75];          // 게이지 4등분과 동일한 경계
+        const REF_PEAK_DB = -20, REF_BASE_DB = -32;   // 보통 크기의 말소리 → 120/80 (마이크에 맞게 이 값만 조정)
+        const SYS_PER_DB = 1.5, DIA_PER_DB = 0.9;
+        const STAGES = [
+            { name: '저기압', badge: '저기압 (톤이 가라앉음)', advice: '목소리 톤이 차분하게 가라앉아 있어요. 따뜻한 차 한 잔과 함께 잠시 쉬어 가면 좋겠습니다.' },
+            { name: '평온', badge: '평온 (안정된 톤)', advice: '톤이 고르고 편안하게 안정되어 있어요. 이 좋은 리듬을 유지하며 하루를 보내 보세요.' },
+            { name: '활기참', badge: '활기참 (생기 있는 톤)', advice: '톤에 생기와 힘이 실려 있어요. 이 에너지를 주변 사람들과도 나누어 보세요.' },
+            { name: '과열', badge: '과열 주의 (톤이 들떠 있음)', advice: '톤이 많이 들뜨고 빨라졌어요. 잠깐 멈추고 천천히 깊게 숨을 내쉬어 보세요.' }
+        ];
+        const median = (a) => { const s = a.slice().sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
+        const pctl = (sorted, p) => sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
+
+        // 음높이(F0): 다운샘플 + 정규화 자기상관. 가장 짧은 강한 봉우리를 골라 옥타브 오류를 줄임
+        function estimatePitch(buf, sr) {
+            const D = Math.max(1, Math.round(sr / 12000));
+            const n = Math.floor(buf.length / D), fs = sr / D;
+            const x = new Float32Array(n);
+            let mean = 0;
+            for (let i = 0; i < n; i++) {
+                let v = 0;
+                for (let j = 0; j < D; j++) v += buf[i * D + j];
+                x[i] = v / D; mean += x[i];
+            }
+            mean /= n;
+            const cum = new Float64Array(n + 1);
+            for (let i = 0; i < n; i++) { x[i] -= mean; cum[i + 1] = cum[i] + x[i] * x[i]; }
+            const minLag = Math.max(2, Math.floor(fs / 400)), maxLag = Math.min(n - 32, Math.ceil(fs / 70));
+            if (maxLag <= minLag + 2) return null;
+            const r = new Float32Array(maxLag + 2);
+            let best = 0;
+            for (let lag = minLag - 1; lag <= maxLag + 1; lag++) {
+                const m = n - lag;
+                let c = 0;
+                for (let i = 0; i < m; i++) c += x[i] * x[i + lag];
+                const den = Math.sqrt(cum[m] * (cum[n] - cum[lag]));
+                r[lag] = den > 1e-12 ? c / den : 0;
+                if (lag >= minLag && lag <= maxLag && r[lag] > best) best = r[lag];
+            }
+            if (best < 0.5) return null;
+            for (let lag = minLag; lag <= maxLag; lag++) {
+                if (r[lag] >= 0.88 * best && r[lag] >= r[lag - 1] && r[lag] >= r[lag + 1]) {
+                    const a = r[lag - 1], b = r[lag], c = r[lag + 1], d = a - 2 * b + c;
+                    return fs / (lag + (d < 0 ? clamp(0.5 * (a - c) / d, -1, 1) : 0));
+                }
+            }
+            return null;
+        }
+
+        // 억양 폭: 음높이의 상위10%~하위10% 차이(반음). 높낮이가 클수록 큼 (화자 성별·나이와 무관)
+        function pitchRange(st) {
+            if (st.length < 15) return null;
+            const f = st.map((_, i) => median(st.slice(Math.max(0, i - 2), i + 3))).sort((x, y) => x - y);
+            return pctl(f, 0.9) - pctl(f, 0.1);
+        }
+
+        // 말 빠르기: 크기 곡선의 봉우리(음절 박동)를 초당 몇 개 세는지
+        function syllableRate(t, db) {
+            let a = -1, b = -1;
+            for (let i = 0; i < db.length; i++) if (db[i] >= VOICE_DB) { if (a < 0) a = i; b = i; }
+            if (a < 0 || t[b] - t[a] < 800) return null;
+            const n = Math.floor((t[b] - t[a]) / 10) + 1, P = 15;
+            const g = new Float32Array(n + 2 * P).fill(VOICE_DB - 15);
+            for (let k = 0, j = a; k < n; k++) {
+                const tk = t[a] + k * 10;
+                while (j < b && t[j + 1] < tk) j++;
+                const j2 = Math.min(j + 1, b), w = t[j2] > t[j] ? clamp((tk - t[j]) / (t[j2] - t[j]), 0, 1) : 0;
+                g[P + k] = db[j] + (db[j2] - db[j]) * w;
+            }
+            const s = g.map((_, k) => { let sum = 0, c = 0; for (let d = -2; d <= 2; d++) if (g[k + d] !== undefined) { sum += g[k + d]; c++; } return sum / c; });
+            let count = 0, last = -99;
+            for (let k = P; k < n + P; k++) {
+                if (!(s[k] > s[k - 1] && s[k] >= s[k + 1])) continue;
+                let minL = s[k], minR = s[k], ok = true;
+                for (let d = 1; d <= 15; d++) {
+                    if (d <= 5 && (s[k - d] > s[k] || s[k + d] > s[k])) { ok = false; break; }
+                    minL = Math.min(minL, s[k - d]); minR = Math.min(minR, s[k + d]);
+                }
+                if (ok && s[k] - Math.max(minL, minR) >= 2 && k - last >= 10) { count++; last = k; }
+            }
+            return count / ((t[b] - t[a]) / 1000);
+        }
+
+        // 톤 점수(0~1) → 4단계. 소리 크기는 전혀 쓰지 않음
+        function computeTone(pitchSt, envT, envDb) {
+            const rangeSt = pitchRange(pitchSt), rate = syllableRate(envT, envDb);
+            const parts = [];
+            if (rangeSt !== null) parts.push([TONE_W.range, clamp((rangeSt - 2) / 12, 0, 1)]);
+            if (rate !== null) parts.push([TONE_W.tempo, clamp((rate - 2.5) / 5.5, 0, 1)]);
+            const wsum = parts.reduce((a, p) => a + p[0], 0);
+            const score = wsum ? parts.reduce((a, p) => a + p[0] * p[1], 0) / wsum : 0.375;   // 측정 불가 시 '평온' 한가운데
+            const stageIndex = score < TONE_CUTS[0] ? 0 : score < TONE_CUTS[1] ? 1 : score < TONE_CUTS[2] ? 2 : 3;
+            console.log('톤 분석', { rangeSt, rate, score, stage: STAGES[stageIndex].name });
+            return { score, stageIndex };
+        }
+
+        // 수치: 말소리 구간 크기(dBFS)만 사용. SYS=큰 소리(상위10%), DIA=작은 소리(하위25%), PULSE=크기 변화폭
+        function computeVolumeMetrics(voicedDb) {
+            const n = voicedDb.length;
+            if (!n) return { sys: 120, dia: 80, pulse: 70 };
+            const s = voicedDb.slice().sort((x, y) => x - y);
+            const mean = voicedDb.reduce((a, v) => a + v, 0) / n;
+            const std = Math.sqrt(voicedDb.reduce((a, v) => a + (v - mean) ** 2, 0) / n);
+            const sys = clamp(Math.round(120 + SYS_PER_DB * (pctl(s, 0.9) - REF_PEAK_DB)), 85, 175);
+            const dia = Math.min(clamp(Math.round(80 + DIA_PER_DB * (pctl(s, 0.25) - REF_BASE_DB)), 55, 115), sys - 20);
+            const pulse = clamp(Math.round(58 + 2.5 * (std - 2)), 55, 130);
+            return { sys, dia, pulse };
+        }
+
+        const volumeWord = (sys) => sys < 108 ? '작은 편' : sys <= 135 ? '보통' : '큰 편';
+
+        function buildDiagnosis(vol, tone) {
+            const st = STAGES[tone.stageIndex];
+            return {
+                sys: vol.sys, dia: vol.dia, pulse: vol.pulse,
+                stageIndex: tone.stageIndex,
+                gaugePercent: Math.round(tone.score * 100),
+                statusLabel: st.badge,
+                summary: `마음 혈압 ${vol.sys}에 ${vol.dia}, 맥박 ${vol.pulse}. 목소리 톤은 ${st.name} 단계, 소리 크기는 ${volumeWord(vol.sys)}입니다.`,
+                advice: st.advice
+            };
+        }
+
+        // ===== 말소리가 없을 때: 수치 없이 오류만 표시 =====
+        function showNoVoice() {
+            sysValue.textContent = '---';
+            diaValue.textContent = '---';
+            pulseValue.textContent = '--';
+            statusText.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-600 inline-block"></span> 음성 미감지 (NO VOICE)`;
+            btnLabel.textContent = '다시 측정';
+            instructionText.innerHTML = IDLE_INSTRUCTION_HTML;
+            showMessage('목소리가 감지되지 않았습니다. 마이크 가까이에서 또렷하게 말씀해 주세요.', 'error');
+        }
+
+        // ===== 측정 종료 및 결과 산출 =====
+        async function finishMeasurement({ stream, recorder, recorded, voicedDb, pitchSt, envT, envDb, stats }) {
+            isMeasuring = false;
+            cancelAnimationFrame(animationId);
+            if (recorder.state !== 'inactive') recorder.stop();
+
+            pulseRing.classList.add('hidden');
+            progressContainer.classList.add('opacity-0');
+            ctx.clearRect(0, 0, canvasW, canvasH);
+
+            // 말소리가 없으면 수치·기록·AI 호출 없이 오류 처리
+            if (!judgeSpeech(stats)) {
+                releaseAudio(stream);
+                showNoVoice();
+                busy = false;
+                return;
+            }
+
+            // UI: 분석 단계로 전환
+            btnLabel.textContent = '분석 중...';
+            statusText.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse inline-block"></span> 데이터 정밀 분석 중...`;
+
+            const localResult = buildDiagnosis(computeVolumeMetrics(voicedDb), computeTone(pitchSt, envT, envDb));
+
+            // AI 응답을 기다리는 동안 로컬 측정값을 먼저 LCD에 표시
+            sysValue.textContent = pad(localResult.sys, 3);
+            diaValue.textContent = pad(localResult.dia, 2);
+            pulseValue.textContent = pad(localResult.pulse, 2);
+
+            try {
+                // 녹음 종료를 기다리되, 오래 걸리면 포기 (2초)
+                const blob = await Promise.race([
+                    recorded,
+                    new Promise((resolve) => setTimeout(() => resolve(null), 2000))
+                ]);
+                releaseAudio(stream);
+
+                const advice = blob ? await analyzeAdviceWithGemini(blob, localResult) : null;   // AI는 조언 문장만 작성 (수치·단계는 바꾸지 않음)
+                displayResult(advice ? { ...localResult, advice } : localResult);
+            } finally {
+                btnLabel.textContent = '다시 측정';
+                busy = false;
+            }
+        }
+
+        // Blob을 Base64로 변환하는 헬퍼
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        // 타임아웃 + 제한적 재시도 fetch
+        // - 429/5xx/네트워크 오류만 재시도 (그 외 4xx는 즉시 포기)
+        // - 마지막 시도 뒤에는 대기하지 않음
+        // - 전체 소요 시간이 timeoutMs를 넘지 않도록 제한
+        async function fetchWithRetry(url, options, { retries = 1, timeoutMs = GEMINI_TIMEOUT_MS } = {}) {
+            const deadline = performance.now() + timeoutMs;
+            let lastError;
+
+            for (let attempt = 0; attempt <= retries; attempt++) {
+                const remaining = deadline - performance.now();
+                if (remaining <= 0) break;
+
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), remaining);
+                let retryable = true;
+                try {
+                    const res = await fetch(url, { ...options, signal: controller.signal });
+                    if (res.ok) return res;
+                    retryable = res.status === 429 || res.status >= 500;
+                    lastError = new Error('HTTP ' + res.status);
+                } catch (e) {
+                    lastError = e;
+                    if (e.name === 'AbortError') retryable = false;
+                } finally {
+                    clearTimeout(timer);
+                }
+
+                if (!retryable || attempt === retries) break;
+                await new Promise((r) => setTimeout(r, 500 * 2 ** attempt));
+            }
+            throw lastError || new Error('timeout');
+        }
+
+        // Gemini: 말의 내용까지 반영한 조언 2문장만 작성 (수치·단계는 위에서 확정된 값을 그대로 사용, 실패 시 null)
+        async function analyzeAdviceWithGemini(audioBlob, r) {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`;
+            try {
+                const base64Audio = await blobToBase64(audioBlob);
+                const mimeType = (audioBlob.type || 'audio/webm').split(';')[0]; // codecs 등 부가 정보 제거
+                const prompt = `당신은 목소리를 듣고 '마음 혈압'에 비유해 조언하는 따뜻하고 센스 있는 AI입니다.
+아래 측정 결과는 이미 확정된 값이니 바꾸거나 반박하지 마세요.
+- 톤 단계(억양·말 빠르기 기준): ${STAGES[r.stageIndex].name}
+- 소리 크기: ${volumeWord(r.sys)}
+- 수치: SYS ${r.sys}, DIA ${r.dia}, PULSE ${r.pulse}
+말하는 내용이 들리면 따뜻하게 반영해, 이 결과에 어울리는 조언을 정확히 2문장으로 쓰세요.
+JSON 형식으로만 응답: {"advice": "..."}`;
+                const payload = {
+                    contents: [{ role: "user", parts: [{ text: prompt }, { inlineData: { mimeType, data: base64Audio } }] }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: { type: "OBJECT", properties: { advice: { type: "STRING" } }, required: ["advice"] }
+                    }
+                };
+                const res = await fetchWithRetry(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                const advice = text ? JSON.parse(text).advice : null;
+                return typeof advice === 'string' && advice.trim() ? advice.trim() : null;
+            } catch (error) {
+                console.warn('AI 조언 실패, 기본 조언으로 대체:', error);
+                return null;
+            }
+        }
+
+        // ===== 화면에 최종 수치 및 진단 결과 렌더링 =====
+        function displayResult(data) {
+            statusText.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-600 inline-block"></span> 측정 완료 (COMPLETE)`;
+            instructionText.textContent = "다시 측정하려면 아래 버튼을 눌러주세요.";
+
+            // 숫자 카운트업 애니메이션 (현재 표시된 값에서 시작)
+            animateValue(sysValue, data.sys, 700, 3);
+            animateValue(diaValue, data.dia, 700, 2);
+            animateValue(pulseValue, data.pulse, 700, 2);
+
+            // 게이지 인디케이터 이동
+            const clampedPercent = clamp(data.gaugePercent, 5, 95);
+            gaugeIndicator.style.left = `calc(${clampedPercent}% - 6px)`;
+            gaugeIndicator.classList.remove('opacity-0');
+
+            // 결과 카드 스타일링 및 내용 업데이트
+            moodBadge.textContent = data.statusLabel;
+            moodBadge.className = "px-3 py-1 rounded-full text-xs font-bold " +
+                ["bg-blue-100 text-blue-700", "bg-emerald-100 text-emerald-700", "bg-amber-100 text-amber-700", "bg-rose-100 text-rose-700"][data.stageIndex];
+
+            moodSummary.textContent = data.summary;
+            moodAdvice.textContent = data.advice;
+            resultCard.classList.remove('hidden');
+
+            // 음성 안내 실행
+            lastSpokenText = `${data.summary} ${data.advice}`;
+            speakResult(lastSpokenText);
+
+            // 로컬 스토리지에 기록 저장
+            saveHistory(data);
+        }
+
+        // 숫자 부드럽게 변하는 애니메이션
+        function animateValue(el, end, duration, padLen) {
+            const start = parseInt(el.textContent, 10) || 0;
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (startTimestamp === null) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                el.textContent = pad(Math.floor(progress * (end - start) + start), padLen);
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // ===== 기록 저장/조회 (localStorage, 접근 불가 환경 대비) =====
+        function readHistory() {
+            try {
+                const parsed = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function writeHistory(list) {
+            try {
+                localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+            } catch (e) { /* 저장 불가 환경에서는 기록만 생략 */ }
+        }
+
+        function saveHistory(data) {
+            const history = readHistory();
+            const d = new Date();
+            const timeStr = d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+
+            history.unshift({
+                time: `${dateStr} ${timeStr}`,
+                sys: data.sys,
+                dia: data.dia,
+                pulse: data.pulse,
+                statusLabel: data.statusLabel,
+                summary: data.summary
+            });
+
+            writeHistory(history.slice(0, 20));
+        }
+
+        // 기록 목록 렌더링 (AI가 만든 문자열은 이스케이프해서 삽입)
+        function renderHistory() {
+            const history = readHistory();
+            if (history.length === 0) {
+                historyList.innerHTML = `
+                    <div class="text-center py-12 text-slate-400 text-sm">
+                        아직 측정된 마음 혈압 기록이 없습니다.
+                    </div>`;
+                return;
+            }
+
+            historyList.innerHTML = history.map((item) => `
+                <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-[11px] font-semibold text-slate-400">${escapeHtml(item.time)}</span>
+                            <span class="text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md">${escapeHtml(item.statusLabel)}</span>
+                        </div>
+                        <p class="text-xs text-slate-700 font-medium line-clamp-1">${escapeHtml(item.summary)}</p>
+                    </div>
+                    <div class="text-right pl-3 shrink-0">
+                        <div class="digital-font text-base font-extrabold text-slate-800">${escapeHtml(item.sys)}/${escapeHtml(item.dia)}</div>
+                        <div class="text-[10px] text-slate-500 font-bold">PULSE ${escapeHtml(item.pulse)}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 모달 열기/닫기 이벤트
+        historyBtn.addEventListener('click', () => {
+            renderHistory();
+            historyModal.classList.remove('hidden');
+        });
+
+        closeHistoryBtn.addEventListener('click', () => {
+            historyModal.classList.add('hidden');
+        });
+
+        clearHistoryBtn.addEventListener('click', () => {
+            try { localStorage.removeItem(HISTORY_KEY); } catch (e) { /* 무시 */ }
+            renderHistory();
+        });
+    </script>
+</body>
+</html>
