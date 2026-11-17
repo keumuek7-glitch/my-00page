@@ -1,0 +1,348 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Noto+Serif+KR:wght@400;500;600;700&display=swap");
+
+:root {
+  color-scheme: light;
+  font-family: "DM Sans", "Noto Sans KR", sans-serif;
+  color: #242a25;
+  background: #f5f3ee;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
+  font-weight: 400;
+
+  --ink: #242a25;
+  --muted: #898c83;
+  --green: #537465;
+  --paper: #fffefa;
+  --serif: "Noto Serif KR", "Batang", serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(ellipse at 50% 46%, rgb(255 255 255 / 55%), transparent 58%),
+    #f5f3ee;
+}
+
+button,
+a {
+  font: inherit;
+}
+
+.page {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  padding: 0 clamp(24px, 7.2vw, 112px);
+}
+
+.topbar {
+  display: flex;
+  min-height: 90px;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e7e5df;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  text-decoration: none;
+}
+
+.wordmark-mark {
+  color: var(--green);
+  font-family: var(--serif);
+  font-size: 27px;
+  line-height: 1;
+}
+
+.topbar-note {
+  color: #a4a49c;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+}
+
+.quote-section {
+  display: flex;
+  width: min(100%, 720px);
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  padding: 80px 0 94px;
+}
+
+.date-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: var(--green);
+  font-size: 12px;
+  letter-spacing: 0.025em;
+}
+
+.date-separator {
+  color: #b0b2aa;
+}
+
+.date-line [lang="ja"] {
+  color: #81867d;
+}
+
+.date-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #7f9a87;
+}
+
+.eyebrow {
+  display: grid;
+  gap: 7px;
+  margin: 32px 0 19px;
+  color: #94968e;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+.eyebrow [lang="ja"] {
+  font-size: 11px;
+}
+
+.quote-card {
+  position: relative;
+  width: 100%;
+  padding: 54px clamp(28px, 7vw, 83px) 48px;
+  border: 1px solid #eeece5;
+  border-radius: 5px;
+  background: rgb(255 254 250 / 90%);
+  box-shadow: 0 20px 60px rgb(52 57 47 / 5%);
+  text-align: center;
+}
+
+.quote-mark {
+  display: block;
+  height: 42px;
+  color: #9db1a0;
+  font-family: Georgia, serif;
+  font-size: 68px;
+  line-height: 1;
+}
+
+blockquote {
+  margin: 21px 0 32px;
+  color: #303832;
+  font-family: var(--serif);
+  font-size: clamp(22px, 4vw, 34px);
+  font-weight: 500;
+  letter-spacing: -0.065em;
+  line-height: 1.75;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.quote-translation {
+  margin: 0;
+  padding-top: 19px;
+  border-top: 1px solid #eeece5;
+  color: #777d75;
+  font-family: var(--serif);
+  font-size: clamp(16px, 2.5vw, 20px);
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+.quote-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  color: #777d75;
+  font-size: 13px;
+  font-style: normal;
+  flex-wrap: wrap;
+}
+
+.quote-footer cite {
+  font-style: normal;
+}
+
+.author-separator {
+  color: #b0b2aa;
+}
+
+.author-rule {
+  width: 18px;
+  height: 1px;
+  background: #a6b0a5;
+}
+
+.card-actions {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 21px;
+}
+
+.copy-button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 9px;
+  padding: 0 14px;
+  border: 1px solid #e4e6df;
+  border-radius: 4px;
+  background: transparent;
+  color: #526357;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.copy-button:hover {
+  border-color: #bfcdc1;
+  background: #eeefe9;
+}
+
+.copy-button:focus-visible,
+.wordmark:focus-visible {
+  outline: 2px solid #537465;
+  outline-offset: 3px;
+}
+
+.copy-button svg {
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.4;
+}
+
+.daily-note {
+  color: #a0a198;
+  font-size: 11px;
+  text-align: right;
+}
+
+.copy-status {
+  min-height: 20px;
+  margin: 9px 0 0;
+  color: var(--green);
+  font-size: 12px;
+}
+
+.copy-fallback {
+  width: 100%;
+  min-height: 68px;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px solid #dfe4dc;
+  border-radius: 4px;
+  background: var(--paper);
+  color: #526357;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.copy-fallback:focus {
+  outline: 2px solid #537465;
+  outline-offset: 2px;
+}
+
+.page-footer {
+  display: flex;
+  min-height: 65px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border-top: 1px solid #e7e5df;
+  color: #999b93;
+  font-size: 11px;
+  letter-spacing: 0.025em;
+}
+
+.footer-sparkle {
+  color: #93a895;
+  font-size: 13px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+@media (max-width: 560px) {
+  .page {
+    padding-right: 22px;
+    padding-left: 22px;
+  }
+
+  .topbar {
+    min-height: 72px;
+  }
+
+  .topbar-note {
+    font-size: 8px;
+    letter-spacing: 0.12em;
+  }
+
+  .quote-section {
+    padding-top: 65px;
+    padding-bottom: 68px;
+  }
+
+  .eyebrow {
+    margin-top: 27px;
+  }
+
+  .quote-card {
+    padding: 43px 22px 39px;
+  }
+
+  blockquote {
+    margin-top: 16px;
+  }
+
+  .daily-note {
+    font-size: 10px;
+    max-width: 46%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
