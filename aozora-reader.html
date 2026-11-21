@@ -258,7 +258,9 @@ const raf = window.requestAnimationFrame ? f => window.requestAnimationFrame(f) 
 /* ================= 설정 ================= */
 const DEFAULT_STYLE = 'Modern Japanese anime illustration, soft cel shading, clean line art, expressive eyes, plain pale blue background.';
 const OLD_DEFAULT_STYLE = 'Modern Japanese anime illustration, soft cel shading, clean line art, expressive eyes, head-and-shoulders portrait, plain pale blue background.';
-const TEXT_MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.1-flash-lite', 'gemini-4-argon'];
+/* 기본값은 gemini-3.5-flash. gemini-3.8-flash는 오류가 나서 기본값에서 뺐다. */
+const TEXT_MODELS = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-4-argon'];
+const BROKEN_MODELS = ['gemini-3.8-flash'];
 const API_BASES = ['https://generativelanguage.googleapis.com/v1beta', 'https://generativelanguage.googleapis.com/v1'];
 const ANALYSIS_LIMIT = 200000;
 const MAX_CHARACTERS = 12;
@@ -267,7 +269,7 @@ const TIMEOUTS = { text: 90000, analysis: 180000 };
 const cfg = {
   remember: store.get('aozora.remember', '0') === '1',
   key: '',
-  textModel: store.get('aozora.textModel', TEXT_MODELS[0]),
+  textModel: (v => (BROKEN_MODELS.includes(v) ? TEXT_MODELS[0] : v))(store.get('aozora.textModel', TEXT_MODELS[0])),
   style: (v => (v === OLD_DEFAULT_STYLE ? DEFAULT_STYLE : v))(store.get('aozora.style', DEFAULT_STYLE))
 };
 if (cfg.remember) cfg.key = store.get('aozora.key', '');
