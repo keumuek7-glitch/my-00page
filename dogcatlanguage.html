@@ -266,6 +266,34 @@
     .mine-msg { margin: 10px 0 0; font-size: 14px; }
     .mine-help { margin: 10px 0 0; color: var(--muted); font-size: 13px; max-width: 60ch; }
 
+    .rev { margin-top: 28px; }
+    .rev-lede { margin: 0 0 12px; max-width: 52ch; }
+    .rev-out {
+      min-width: 0;
+      margin-top: 14px;
+      display: grid;
+      gap: 6px;
+      padding: 16px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .rev-out[data-sp="dog"] { --accent: var(--dog); --accent-soft: var(--dog-soft); }
+    .rev-out[data-sp="cat"] { --accent: var(--cat); --accent-soft: var(--cat-soft); }
+    .rev-file { margin: 0; color: var(--muted); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rev-ratio { margin: 0; color: var(--muted); font-size: 15px; }
+    .rev-ratio b { font-family: var(--font-display); font-weight: 400; font-size: 18px; color: var(--accent); }
+    .rev-phrase {
+      margin: 4px 0 0;
+      font-family: var(--font-display);
+      font-size: clamp(36px, 10vw, 56px);
+      line-height: 1.15;
+      color: var(--accent);
+      text-wrap: balance;
+    }
+    .rev-why { margin: 0; }
+    .rev-feats { list-style: none; margin: 6px 0; padding: 0; display: grid; gap: 2px; color: var(--muted); font-size: 14px; }
+
     @media (prefers-reduced-motion: reduce) {
       .phrase { transition: none; }
       .phrase:active { transform: none; }
@@ -315,6 +343,29 @@
       </button>
     </section>
   </div>
+
+  <section class="rev" aria-labelledby="revTitle">
+    <h2 class="label" id="revTitle">역번역 (재미용)</h2>
+    <p class="rev-lede">개나 고양이 소리를 녹음한 파일을 올리면 소리의 특징을 보고 인사말 하나로 바꿔 보여 줍니다.</p>
+    <button type="button" class="play" id="revPick">
+      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 16V4M7 9l5-5 5 5M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>소리 파일 올리기</span>
+    </button>
+    <input type="file" id="revPicker" accept="audio/*" hidden>
+    <p class="mine-msg" id="revMsg" aria-live="polite"></p>
+    <div class="rev-out" id="revOut" hidden>
+      <p class="rev-file" id="revFile"></p>
+      <p class="rev-ratio" id="revRatio"></p>
+      <p class="rev-phrase" id="revPhrase"></p>
+      <p class="rev-why" id="revWhy"></p>
+      <ul class="rev-feats" id="revFeats"></ul>
+      <div class="slot-actions">
+        <button type="button" class="slot-btn" id="revHear">올린 소리 듣기</button>
+        <button type="button" class="slot-btn" id="revSay">사람 말로 듣기</button>
+      </div>
+      <p class="mine-help">이 결과는 소리의 길이, 횟수, 높낮이, 거칠기로 정한 규칙에 따른 장난감입니다. 동물의 실제 뜻을 알려 주는 것이 아니고, 개와 고양이를 정확히 구분한 결과도 아닙니다.</p>
+    </div>
+  </section>
 
   <section class="mine" aria-labelledby="mineTitle">
     <h2 class="label" id="mineTitle">내 녹음 넣기</h2>
@@ -374,42 +425,6 @@
     return bytes.buffer;
   }
 
-  function pcmToWavBuffer(pcmBuffer, sampleRate) {
-    const pcmBytes = new Uint8Array(pcmBuffer);
-    const wavBuffer = new ArrayBuffer(44 + pcmBytes.length);
-    const view = new DataView(wavBuffer);
-    function writeStr(offset, str) {
-      for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
-    }
-    writeStr(0, 'RIFF');
-    view.setUint32(4, 36 + pcmBytes.length, true);
-    writeStr(8, 'WAVE');
-    writeStr(12, 'fmt ');
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true);
-    view.setUint16(22, 1, true);
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, sampleRate * 2, true);
-    view.setUint16(32, 2, true);
-    view.setUint16(34, 16, true);
-    writeStr(36, 'data');
-    view.setUint32(40, pcmBytes.length, true);
-    new Uint8Array(wavBuffer, 44).set(pcmBytes);
-    return wavBuffer;
-  }
-
-  const AI_PROMPTS = {
-    human: {
-      hello: { text: '밝고 다정한 한국어 목소리로 또박또박 인사하세요: 안녕하세요!', voice: 'Aoede' },
-      thanks: { text: '따뜻하고 진심 어린 한국어 목소리로 말하세요: 고맙습니다.', voice: 'Aoede' },
-      love: { text: '사랑스럽고 부드러운 한국어 목소리로 말하세요: 사랑합니다.', voice: 'Aoede' },
-      like: { text: '기분 좋고 경쾌한 한국어 목소리로 말하세요: 좋아요!', voice: 'Aoede' },
-      dislike: { text: '단호하지만 부드러운 한국어 목소리로 말하세요: 싫어요.', voice: 'Aoede' }
-    }
-  };
-  const aiAudioCache = {};
-  const aiPending = {};
-
   /* 개·고양이 기본 소리: ESC-50 데이터셋의 실제 녹음을 발췌해 이 파일 안에 내장했습니다(외부 서버 불필요). */
   const BUILTIN_B64 = {
     dog: {
@@ -451,7 +466,7 @@
     ensureAudio();
   }
 
-  /* 브라우저 내장 한국어 음성 백업 */
+  /* 기기에 내장된 한국어 음성으로 문구 읽기 */
   function speakFallbackKo(text) {
     return new Promise(function (resolve) {
       const ss = window.speechSynthesis;
@@ -469,6 +484,8 @@
         ss.cancel();
         const u = new SpeechSynthesisUtterance(text);
         u.lang = 'ko-KR';
+        const koVoice = (ss.getVoices ? ss.getVoices() : []).filter(function (v) { return /^ko/i.test(v.lang); })[0];
+        if (koVoice) u.voice = koVoice;
         u.rate = 1.02;
         u.onend = function () { finish(true); };
         u.onerror = function () { finish(false); };
@@ -478,71 +495,6 @@
         finish(false);
       }
     });
-  }
-
-  async function fetchGeminiAudio(kind, phraseId) {
-    if (kind !== 'human') return null;
-    const cacheKey = kind + ':' + phraseId;
-    if (aiAudioCache[cacheKey]) return aiAudioCache[cacheKey];
-    if (aiPending[cacheKey]) return aiPending[cacheKey];
-
-    const spec = AI_PROMPTS.human[phraseId];
-    const apiKey = "";
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
-
-    const task = (async function () {
-      const delays = [600, 1400, 2800];
-      for (let attempt = 0; attempt <= delays.length; attempt++) {
-        try {
-          const payload = {
-            contents: [{ parts: [{ text: spec.text }] }],
-            generationConfig: {
-              responseModalities: ["AUDIO"],
-              speechConfig: {
-                voiceConfig: {
-                  prebuiltVoiceConfig: { voiceName: spec.voice }
-                }
-              }
-            },
-            model: "gemini-2.5-flash-preview-tts"
-          };
-
-          const res = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-
-          const json = await res.json();
-          const parts = json?.candidates?.[0]?.content?.parts || [];
-          const audioPart = parts.find(function (p) { return p.inlineData && p.inlineData.data; });
-          if (!audioPart) throw new Error('No audio data');
-
-          const mime = audioPart.inlineData.mimeType || 'audio/L16;rate=24000';
-          const rateMatch = mime.match(/rate=(\d+)/);
-          const sampleRate = rateMatch ? parseInt(rateMatch[1], 10) : 24000;
-          const rawPcm = base64ToArrayBuffer(audioPart.inlineData.data);
-          const wavAb = pcmToWavBuffer(rawPcm, sampleRate);
-          const buf = await decode(wavAb);
-          const entry = { buf: buf, gain: peakGain(buf) };
-          aiAudioCache[cacheKey] = entry;
-          return entry;
-        } catch (err) {
-          if (attempt < delays.length) {
-            await sleep(delays[attempt]);
-          } else {
-            return null;
-          }
-        }
-      }
-      return null;
-    })();
-
-    aiPending[cacheKey] = task;
-    const resultEntry = await task;
-    delete aiPending[cacheKey];
-    return resultEntry;
   }
 
   /* ---------- 문구별 표시 정보 ---------- */
@@ -716,7 +668,7 @@
   const humanVoice = $('humanVoice'), picker = $('picker'), slotsEl = $('slots');
   const MAX_CLIP = 10;
   const KINDS = [
-    { k: 'human', label: '사람 목소리', none: '자연스러운 한국어 음성 사용 중' },
+    { k: 'human', label: '사람 목소리', none: '기기 한국어 음성으로 읽기' },
     { k: 'dog', label: '개 소리', none: '실제 개 녹음 음원 사용 중' },
     { k: 'cat', label: '고양이 소리', none: '실제 고양이 녹음 음원 사용 중' }
   ];
@@ -760,18 +712,10 @@
 
     if (humanVoice.checked) {
       const hc = clips['human:' + state.phrase];
-      let humanEntry = hc && hc.buf ? hc : null;
-      if (!humanEntry) {
-        playLabel.textContent = '목소리 준비 중…';
-        humanEntry = await fetchGeminiAudio('human', state.phrase);
-      }
-      if (my !== seq) return;
-      if (humanEntry && humanEntry.buf) {
-        playLabel.textContent = '재생 중';
-        const d = playClip(humanEntry, c.currentTime + 0.03, master, true);
+      if (hc && hc.buf) {
+        const d = playClip(hc, c.currentTime + 0.03, master, true);
         await sleep(d * 1000 + 200);
       } else {
-        playLabel.textContent = '재생 중';
         const ok = await speakFallbackKo(phraseText(state.phrase));
         if (!ok && my === seq) {
           setSpeechNote('사람 목소리를 재생할 수 없어 동물 소리만 들려줍니다.');
@@ -1010,9 +954,265 @@
     }).then(renderSlots).catch(function () {});
   }
 
+  /* ---------- 역번역 (재미용) ---------- */
+  const revPicker = $('revPicker'), revOut = $('revOut');
+  let revClip = null, revPhraseId = null;
+  function revMsg(t) { $('revMsg').textContent = t; }
+
+  // 한 프레임의 높낮이: 자기상관으로 추정한다.
+  function framePitch(x, p, w, lagMin, lagMax, sr) {
+    let e0 = 0;
+    for (let i = 0; i < w; i++) e0 += x[p + i] * x[p + i];
+    if (e0 < 1e-8) return null;
+    const rs = new Float32Array(lagMax + 2);
+    let best = 0, bestLag = lagMin;
+    for (let lag = lagMin; lag <= lagMax; lag++) {
+      let c = 0, e1 = 0;
+      for (let i = 0; i < w; i++) {
+        const b = x[p + i + lag];
+        c += x[p + i] * b;
+        e1 += b * b;
+      }
+      const r = c / Math.sqrt(e0 * e1 + 1e-12);
+      rs[lag] = r;
+      if (r > best) { best = r; bestLag = lag; }
+    }
+    for (let lag = lagMin + 1; lag < bestLag; lag++) {
+      if (rs[lag] >= best * 0.9 && rs[lag] > rs[lag - 1] && rs[lag] >= rs[lag + 1]) {
+        bestLag = lag;
+        best = rs[lag];
+        break;
+      }
+    }
+    return { hz: sr / bestLag, clarity: Math.max(0, best) };
+  }
+
+  // 소리에서 울음 구간을 찾아 횟수, 길이, 높낮이, 맑기를 구한다. 앞의 20초만 본다.
+  function analyzeClip(buf) {
+    const sr0 = buf.sampleRate;
+    const dec = Math.max(1, Math.floor(sr0 / 11025));
+    const sr = sr0 / dec;
+    const maxIn = Math.floor(sr0 * 20);
+    const total = Math.min(buf.length, maxIn);
+    const n = Math.floor(total / dec);
+    const nch = buf.numberOfChannels;
+    const x = new Float32Array(n);
+    for (let ch = 0; ch < nch; ch++) {
+      const d = buf.getChannelData(ch);
+      for (let i = 0; i < n; i++) {
+        let s = 0;
+        for (let k = 0; k < dec; k++) s += d[i * dec + k];
+        x[i] += s / dec / nch;
+      }
+    }
+    const hop = Math.round(sr * 0.01), win = Math.round(sr * 0.03);
+    const nf = Math.floor((n - win) / hop);
+    if (nf < 10) return null;
+    const rms = new Float32Array(nf);
+    for (let i = 0; i < nf; i++) {
+      let s = 0;
+      for (let k = 0; k < win; k++) { const v = x[i * hop + k]; s += v * v; }
+      rms[i] = Math.sqrt(s / win);
+    }
+    const sorted = Array.from(rms).sort(function (a, b) { return a - b; });
+    const floorLevel = sorted[Math.floor(nf * 0.2)], peak = sorted[nf - 1];
+    if (peak < 0.003) return null;
+    const thr = Math.max(floorLevel * 3, peak * 0.2);
+    const segs = [];
+    let st = -1, last = -1;
+    for (let i = 0; i < nf; i++) {
+      if (rms[i] >= thr) {
+        if (st < 0) st = i;
+        last = i;
+      } else if (st >= 0 && i - last > 8) {
+        segs.push([st, last]);
+        st = -1;
+      }
+    }
+    if (st >= 0) segs.push([st, last]);
+    const secPerHop = hop / sr;
+    const calls = segs.map(function (s) {
+      return { a: s[0], b: s[1], dur: (s[1] - s[0]) * secPerHop + win / sr };
+    }).filter(function (c) { return c.dur >= 0.06; });
+    if (!calls.length) return null;
+
+    const lagMin = Math.max(2, Math.floor(sr / 1500)), lagMax = Math.ceil(sr / 80);
+    const w = 512;
+    let frames = 0;
+    calls.forEach(function (c) { frames += Math.max(1, Math.floor((c.b - c.a) * hop / 256)); });
+    const step = Math.max(256, Math.ceil(frames / 160) * 256);
+    const track = [];
+    let clSum = 0, clN = 0;
+    calls.forEach(function (c) {
+      const from = c.a * hop, to = c.b * hop + win;
+      for (let p = from; p + w + lagMax <= n && p < to; p += step) {
+        const r = framePitch(x, p, w, lagMin, lagMax, sr);
+        if (!r) continue;
+        clSum += r.clarity;
+        clN++;
+        if (r.clarity >= 0.5) track.push(r.hz);
+      }
+    });
+    const clarity = clN ? clSum / clN : 0;
+    const med = function (a) {
+      const s = a.slice().sort(function (p, q) { return p - q; });
+      return s[Math.floor(s.length / 2)];
+    };
+    let hz = null, contour = 'none';
+    if (track.length >= 3) {
+      hz = med(track);
+      if (track.length >= 6) {
+        const k = Math.floor(track.length / 3);
+        const ratio = med(track.slice(track.length - k)) / med(track.slice(0, k));
+        contour = ratio > 1.15 ? 'rise' : ratio < 0.87 ? 'fall' : 'flat';
+      } else {
+        contour = 'flat';
+      }
+    }
+    let sumDur = 0, longest = 0;
+    calls.forEach(function (c) { sumDur += c.dur; if (c.dur > longest) longest = c.dur; });
+    let rate = 0;
+    if (calls.length >= 2) {
+      rate = (calls.length - 1) / Math.max(0.2, (calls[calls.length - 1].a - calls[0].a) * secPerHop);
+    }
+    return {
+      nCalls: calls.length,
+      meanDur: sumDur / calls.length,
+      longest: longest,
+      rate: rate,
+      hz: hz,
+      clarity: clarity,
+      contour: contour,
+      truncated: buf.length > maxIn
+    };
+  }
+
+  const PHRASE_WHY = {
+    hello: '짧은 울음이 한두 번 나와서',
+    thanks: '중간 길이의 울음이 두세 번 이어져서',
+    love: '길고 맑은 울음이 한두 번 나와서',
+    like: '짧은 울음이 빠르게 여러 번 반복돼서',
+    dislike: '소리가 거칠고 탁해서'
+  };
+
+  // 정해 둔 규칙으로 개/고양이 비율과 인사말을 고른다. 연구로 검증된 규칙이 아니다.
+  function judge(F) {
+    let dog = 1, cat = 1;
+    if (F.meanDur < 0.35) dog += 2;
+    else if (F.clarity >= 0.55 && F.meanDur < 2) cat += 2.5;
+    if (F.clarity < 0.45) dog += 1;
+    if (F.hz) {
+      if (F.hz < 350) dog += 1.5;
+      else if (F.hz <= 1200) cat += 1;
+    }
+    if (F.nCalls >= 3 && F.meanDur < 0.35) dog += 1.5;
+    if (F.longest >= 0.6 && F.clarity >= 0.55) cat += 1;
+    const d = Math.min(9, Math.max(1, Math.round(10 * dog / (dog + cat))));
+
+    const sc = { hello: 1.2, thanks: 0.8, love: 0.5, like: 0.5, dislike: 0.5 };
+    if (F.nCalls >= 3 && F.rate >= 2) sc.like += 3;
+    if (F.nCalls >= 3 && F.meanDur < 0.3) sc.like += 1;
+    if (F.hz && F.hz > 500 && F.nCalls >= 2) sc.like += 0.5;
+    if (F.clarity < 0.5) sc.dislike += 2.5;
+    if (F.hz && F.hz < 300) sc.dislike += 1;
+    if (F.nCalls <= 2 && F.longest >= 0.8 && F.clarity >= 0.55) sc.love += 3;
+    if (F.contour === 'fall' && F.longest >= 0.5) sc.love += 1;
+    if (F.nCalls >= 2 && F.nCalls <= 3 && F.meanDur >= 0.15 && F.meanDur < 0.6 && F.clarity >= 0.5) sc.thanks += 2;
+    if (F.contour === 'fall' && F.nCalls >= 2) sc.thanks += 0.8;
+    if (F.nCalls <= 2 && F.longest < 0.8) sc.hello += 1.2;
+    if (F.contour === 'rise') sc.hello += 1;
+    let best = 'hello';
+    PHRASES.forEach(function (p) { if (sc[p.id] > sc[best]) best = p.id; });
+    let why = PHRASE_WHY[best];
+    if (best === 'hello') {
+      if (F.contour === 'rise') why = '끝이 올라가는 소리라서';
+      else if (sc.hello <= 1.2) why = '두드러진 특징이 없어서';
+    }
+    return { d: d, phrase: best, why: why };
+  }
+
+  function showReverse(name, F) {
+    const j = judge(F);
+    revPhraseId = j.phrase;
+    revOut.dataset.sp = j.d >= 6 ? 'dog' : j.d <= 4 ? 'cat' : '';
+    $('revFile').textContent = name;
+    const lead = j.d >= 6 ? '개 소리에 가까움' : j.d <= 4 ? '고양이 소리에 가까움' : '어느 쪽인지 애매함';
+    const r = $('revRatio');
+    r.textContent = '';
+    r.appendChild(document.createTextNode('소리 특징으로 본 비율 '));
+    const b = document.createElement('b');
+    b.textContent = '개 ' + j.d + ' : 고양이 ' + (10 - j.d);
+    r.appendChild(b);
+    r.appendChild(document.createTextNode(' (' + lead + ')'));
+    $('revPhrase').textContent = phraseText(j.phrase);
+    $('revWhy').textContent = '이유: ' + j.why;
+    const cl = Math.min(10, Math.max(0, Math.round(F.clarity * 10)));
+    const contourText = { rise: ', 끝으로 갈수록 올라감', fall: ', 끝으로 갈수록 내려감', flat: ', 비슷하게 유지', none: '' };
+    const feats = [
+      '울음 횟수 ' + F.nCalls + '회',
+      '가장 긴 울음 ' + F.longest.toFixed(2) + '초',
+      F.hz ? '높낮이 약 ' + Math.round(F.hz) + 'Hz' + contourText[F.contour] : '높낮이가 잡히지 않음 (거친 소리)',
+      '맑은 소리 ' + cl + ' : 거친 소리 ' + (10 - cl)
+    ];
+    const ul = $('revFeats');
+    ul.textContent = '';
+    feats.forEach(function (t) {
+      const li = document.createElement('li');
+      li.textContent = t;
+      ul.appendChild(li);
+    });
+    revOut.hidden = false;
+  }
+
+  $('revPick').addEventListener('click', function () {
+    revPicker.value = '';
+    revPicker.click();
+  });
+  revPicker.addEventListener('change', async function () {
+    const f = revPicker.files && revPicker.files[0];
+    if (!f) return;
+    if (f.size > 12 * 1024 * 1024) { revMsg('파일이 12MB보다 커서 분석할 수 없습니다.'); return; }
+    revMsg('분석 중…');
+    try {
+      const ab = await f.arrayBuffer();
+      const buf = await decode(ab);
+      const F = analyzeClip(buf);
+      if (!F) {
+        revOut.hidden = true;
+        revMsg('소리를 찾지 못했습니다. 울음소리가 또렷하게 들어 있는 파일을 올려 주세요.');
+        return;
+      }
+      revClip = { name: f.name, buf: buf, gain: peakGain(buf) };
+      showReverse(f.name, F);
+      revMsg(F.truncated ? '앞의 20초만 분석했습니다.' : '');
+    } catch (e) {
+      revOut.hidden = true;
+      revMsg('이 파일은 읽을 수 없습니다. mp3, m4a, wav 파일을 올려 주세요.');
+    }
+  });
+  $('revHear').addEventListener('click', function () {
+    const c = ensureAudio();
+    if (!c || !revClip) return;
+    stopAll();
+    playClip(revClip, c.currentTime + 0.03, master, true);
+  });
+  $('revSay').addEventListener('click', async function () {
+    if (!revPhraseId) return;
+    const c = ensureAudio();
+    if (!c) return;
+    stopAll();
+    const my = seq;
+    const hc = clips['human:' + revPhraseId];
+    if (hc && hc.buf) {
+      playClip(hc, c.currentTime + 0.03, master, true);
+      return;
+    }
+    const ok = await speakFallbackKo(phraseText(revPhraseId));
+    if (my === seq) revMsg(ok ? '' : '이 기기에서는 사람 목소리 읽기가 되지 않습니다.');
+  });
+
   function preloadInitialAudio() {
     loadBuiltin();
-    fetchGeminiAudio('human', 'hello');
   }
 
   playBtn.addEventListener('click', play);
